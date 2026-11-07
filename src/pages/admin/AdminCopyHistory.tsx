@@ -30,6 +30,20 @@ type Tab = 'relationships' | 'trades'
 type Modal = 'add-rel' | 'edit-rel' | 'del-rel' | 'add-trade' | 'edit-trade' | 'del-trade' | null
 
 /* ─── Helpers ───────────────────────────────────────────────────────────────── */
+/** ISO (UTC) -> "YYYY-MM-DDTHH:mm" in the admin's local time, for <input type="datetime-local"> */
+function toLocalInput(iso: string | null | undefined) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+/** "YYYY-MM-DDTHH:mm" (local) -> full ISO string with timezone, or null if empty */
+function fromLocalInput(v: string) {
+  if (!v) return null
+  const d = new Date(v)
+  return isNaN(d.getTime()) ? null : d.toISOString()
+}
 function fmtMoney(n: number) { return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 function fmtDate(iso: string | null) {
   if (!iso) return '—'
@@ -110,8 +124,8 @@ export function AdminCopyHistory() {
       followerId: r.followerId, traderId: r.traderId,
       allocatedAmount: String(r.allocatedAmount), maxDrawdown: r.maxDrawdown != null ? String(r.maxDrawdown) : '',
       profitLoss: String(r.profitLoss), status: r.status,
-      startTime: r.startTime ? new Date(r.startTime).toISOString().slice(0, 16) : '',
-      stopTime: r.stopTime ? new Date(r.stopTime).toISOString().slice(0, 16) : '',
+      startTime: toLocalInput(r.startTime),
+      stopTime: toLocalInput(r.stopTime),
     })
     setFormError(''); setModal('edit-rel')
   }
@@ -128,8 +142,8 @@ export function AdminCopyHistory() {
       asset: t.asset, tradeType: t.tradeType,
       entryPrice: String(t.entryPrice), exitPrice: t.exitPrice != null ? String(t.exitPrice) : '',
       lotSize: String(t.lotSize), profitLoss: String(t.profitLoss), status: t.status,
-      createdAt: t.createdAt ? new Date(t.createdAt).toISOString().slice(0, 16) : '',
-      closedAt: t.closedAt ? new Date(t.closedAt).toISOString().slice(0, 16) : '',
+      createdAt: toLocalInput(t.createdAt),
+      closedAt: toLocalInput(t.closedAt),
     })
     setFormError(''); setModal('edit-trade')
   }
@@ -148,8 +162,8 @@ export function AdminCopyHistory() {
         maxDrawdown: relForm.maxDrawdown ? parseFloat(relForm.maxDrawdown) : null,
         profitLoss: parseFloat(relForm.profitLoss || '0'),
         status: relForm.status,
-        startTime: relForm.startTime || null,
-        stopTime: relForm.stopTime || null,
+        startTime: fromLocalInput(relForm.startTime),
+        stopTime: fromLocalInput(relForm.stopTime),
       }
       if (modal === 'add-rel') {
         await adminApi.post('/admin/copy-relationships', body)
@@ -187,8 +201,8 @@ export function AdminCopyHistory() {
         lotSize: parseFloat(tradeForm.lotSize || '0'),
         profitLoss: parseFloat(tradeForm.profitLoss || '0'),
         status: tradeForm.status,
-        createdAt: tradeForm.createdAt || null,
-        closedAt: tradeForm.closedAt || null,
+        createdAt: fromLocalInput(tradeForm.createdAt),
+        closedAt: fromLocalInput(tradeForm.closedAt),
       }
       if (modal === 'add-trade') {
         await adminApi.post('/admin/copy-trades', body)
