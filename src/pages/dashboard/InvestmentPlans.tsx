@@ -235,12 +235,12 @@ export function InvestmentPlans() {
                   </ul>
 
                   <button
-                    onClick={() => navigate(plan.badge === 'Elite' ? '/dashboard/settings/support' : '/dashboard/deposit')}
+                    onClick={() => navigate('/dashboard/deposit')}
                     style={{ width: '100%', padding: '0.65rem', borderRadius: '0.625rem', fontSize: 13, cursor: 'pointer', transition: 'opacity 0.15s', ...ctaStyle }}
                     onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
                     onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                   >
-                    {plan.badge === 'Elite' ? 'Contact Us' : 'Start Investing'}
+                    Start Investing
                   </button>
                 </div>
               )
