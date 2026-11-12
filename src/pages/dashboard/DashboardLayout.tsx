@@ -9,7 +9,7 @@ import {
   Activity, Copy, Bot, Zap, Download, ArrowUpRight, Menu, LogOut,
   Bell, Settings, Building2, CandlestickChart, UserCircle2, KeyRound,
   SlidersHorizontal, ShieldCheck, CreditCard, Globe, Lock, HelpCircle,
-  ChevronRight as ChevronRight2, Clock, HeadphonesIcon, ShieldOff,
+  ChevronRight as ChevronRight2, Clock, HeadphonesIcon, ShieldOff, Pickaxe,
 } from 'lucide-react'
 
 const NAV = [
@@ -35,6 +35,7 @@ const NAV = [
       { label: 'Live Markets',      path: '/dashboard/markets',           icon: Activity,  badge: { label: 'Live',    color: '#2563eb', bg: 'rgba(37,99,235,0.15)' } },
       { label: 'Copy Traders',      path: '/dashboard/copy-trading',      icon: Copy,      badge: { label: 'Pro',     color: '#60a5fa', bg: 'rgba(96,165,250,0.15)' } },
       { label: 'AI Trading Bots',   path: '/dashboard/ai-bots',           icon: Bot,       badge: { label: 'AI',      color: '#94a3b8', bg: 'rgba(148,163,184,0.15)' } },
+      { label: 'Mining',            path: '/dashboard/mining',            icon: Pickaxe,   badge: { label: 'New',     color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' } },
     ],
   },
   {
