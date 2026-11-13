@@ -46,6 +46,7 @@ import { PropertyListing } from '@/pages/dashboard/PropertyListing'
 import { PropertyDetail } from '@/pages/dashboard/PropertyDetail'
 import { TradingMarkets } from '@/pages/dashboard/TradingMarkets'
 import { Mining } from '@/pages/dashboard/Mining'
+import { MiningHistory } from '@/pages/dashboard/MiningHistory'
 import { TradeDetail } from '@/pages/dashboard/TradeDetail'
 import { ProfileSettings } from '@/pages/dashboard/settings/ProfileSettings'
 import { ProfileUpdate } from '@/pages/dashboard/settings/ProfileUpdate'
@@ -175,6 +176,7 @@ function App() {
         <Route path="copy-trading" element={<CopyTrading />} />
         <Route path="ai-bots"      element={<AITradingBots />} />
         <Route path="mining"       element={<Mining />} />
+        <Route path="mining/history" element={<MiningHistory />} />
         <Route path="signals"      element={<PremiumSignals />} />
         <Route path="deposit"      element={<DepositFunds />} />
         <Route path="withdrawal"   element={<WithdrawalFunds />} />
