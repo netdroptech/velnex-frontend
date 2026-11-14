@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { TrendingUp, TrendingDown, ChevronRight, RefreshCw, Search, Star, BarChart2, Wifi, WifiOff } from 'lucide-react'
+import { CryptoLogo } from '@/components/ui/CryptoLogo'
 
 // ── Static metadata (colors, names, pairs) ────────────────────────────────
 const PAIR_META: Record<string, { pair: string; name: string; color: string }> = {
@@ -51,21 +52,54 @@ interface PairData {
   volume:  number
 }
 
-// ── Binance 24hr ticker fetch ────────────────────────────────────────────
-const BINANCE_URL =
-  `https://api.binance.com/api/v3/ticker/24hr?symbols=${encodeURIComponent(JSON.stringify(SYMBOLS))}`
+// ── CoinGecko live price fetch ───────────────────────────────────────────
+// Binance API is rate-limited / geo-blocked from browsers in some regions,
+// which surfaced as "Offline — showing cached" in production. CoinGecko is
+// CORS-friendly, geo-unblocked, and gives us everything we need in one call.
+
+const SYMBOL_TO_CG: Record<string, string> = {
+  BTCUSDT:   'bitcoin',
+  ETHUSDT:   'ethereum',
+  BNBUSDT:   'binancecoin',
+  ADAUSDT:   'cardano',
+  XRPUSDT:   'ripple',
+  SOLUSDT:   'solana',
+  DOTUSDT:   'polkadot',
+  DOGEUSDT:  'dogecoin',
+  AVAXUSDT:  'avalanche-2',
+  MATICUSDT: 'matic-network',
+  LINKUSDT:  'chainlink',
+  LTCUSDT:   'litecoin',
+  UNIUSDT:   'uniswap',
+  ATOMUSDT:  'cosmos',
+  NEARUSDT:  'near',
+  APTUSDT:   'aptos',
+}
+const CG_TO_SYMBOL: Record<string, string> = Object.fromEntries(
+  Object.entries(SYMBOL_TO_CG).map(([k, v]) => [v, k]),
+)
+const CG_IDS = Object.values(SYMBOL_TO_CG).join(',')
+const COINGECKO_URL =
+  `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${CG_IDS}` +
+  `&order=market_cap_desc&per_page=50&page=1&price_change_percentage=24h`
 
 async function fetchLivePrices(): Promise<PairData[]> {
-  const res = await fetch(BINANCE_URL)
+  const res = await fetch(COINGECKO_URL)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  const data = await res.json()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data as any[]).map((t) => ({
-    symbol: t.symbol as string,
-    price:  parseFloat(t.lastPrice),
-    change: parseFloat(t.priceChangePercent),
-    volume: parseFloat(t.quoteVolume),   // quoteVolume = USDT volume
-  }))
+  const data = await res.json() as Array<{
+    id: string
+    current_price: number
+    price_change_percentage_24h: number | null
+    total_volume: number
+  }>
+  return data
+    .map(c => ({
+      symbol: CG_TO_SYMBOL[c.id] ?? '',
+      price:  c.current_price ?? 0,
+      change: c.price_change_percentage_24h ?? 0,
+      volume: c.total_volume ?? 0,
+    }))
+    .filter(p => p.symbol) // drop any we didn't recognise
 }
 
 // ── Formatters ────────────────────────────────────────────────────────────
@@ -90,18 +124,7 @@ function fmtCountdown(s: number) {
 
 // ── Sub-components ────────────────────────────────────────────────────────
 function CoinIcon({ symbol, color }: { symbol: string; color: string }) {
-  const letter = symbol.replace('USDT', '').charAt(0)
-  return (
-    <div style={{
-      width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
-      background: `linear-gradient(135deg, ${color}55 0%, ${color}22 100%)`,
-      border: `1.5px solid ${color}44`,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: 13, fontWeight: 800, color,
-    }}>
-      {letter}
-    </div>
-  )
+  return <CryptoLogo symbol={symbol} size={38} fallbackColor={color} />
 }
 
 function Sparkline({ up }: { up: boolean }) {
@@ -112,7 +135,7 @@ function Sparkline({ up }: { up: boolean }) {
     <svg width={80} height={18} viewBox="0 0 80 18" fill="none">
       <polyline
         points={pts}
-        stroke={up ? '#60a5fa' : '#f87171'}
+        stroke={up ? '#a78bfa' : '#f87171'}
         strokeWidth={1.5}
         fill="none"
         strokeLinecap="round"
@@ -124,14 +147,14 @@ function Sparkline({ up }: { up: boolean }) {
 
 // ── Flash animation styles ─────────────────────────────────────────────────
 const FLASH_CSS = `
-@keyframes flashGreen { 0%,100%{background:transparent} 30%{background:rgba(96,165,250,0.12)} }
+@keyframes flashGreen { 0%,100%{background:transparent} 30%{background:rgba(167,139,250,0.12)} }
 @keyframes flashRed   { 0%,100%{background:transparent} 30%{background:rgba(248,113,113,0.12)} }
 .flash-green { animation: flashGreen 0.7s ease; }
 .flash-red   { animation: flashRed   0.7s ease; }
 `
 
 // ── Main component ─────────────────────────────────────────────────────────
-const REFRESH_SECS = 120 // 2 minutes
+const REFRESH_SECS = 20 // real-time feel, well within CoinGecko's free-tier limits
 
 export function TradingMarkets() {
   const navigate = useNavigate()
@@ -224,12 +247,12 @@ export function TradingMarkets() {
           <div className="flex items-center gap-2 mb-2">
             <span style={{
               fontSize: 11, fontWeight: 700, letterSpacing: '0.08em',
-              color: '#60a5fa', background: 'rgba(96,165,250,0.1)',
+              color: '#a78bfa', background: 'rgba(167,139,250,0.1)',
               padding: '3px 10px', borderRadius: 999,
               display: 'flex', alignItems: 'center', gap: 5,
             }}>
               <span style={{
-                width: 5, height: 5, borderRadius: '50%', background: '#60a5fa',
+                width: 5, height: 5, borderRadius: '50%', background: '#a78bfa',
                 animation: 'liveBlink 1.2s ease-in-out infinite', display: 'inline-block',
               }} />
               LIVE PRICES
@@ -249,7 +272,7 @@ export function TradingMarkets() {
             letterSpacing: '-0.02em', lineHeight: 1.2,
           }}>Trade</h1>
           <p style={{ fontSize: 13, color: 'hsl(240 5% 55%)', marginTop: 4 }}>
-            Binance spot markets — prices refresh automatically every 2 minutes.
+            Live spot markets — prices refresh automatically every 20 seconds.
           </p>
         </div>
 
@@ -271,7 +294,7 @@ export function TradingMarkets() {
             <RefreshCw
               size={13}
               style={{
-                color: online ? '#60a5fa' : '#f87171',
+                color: online ? '#a78bfa' : '#f87171',
                 animation: loading ? 'spin 0.8s linear infinite' : 'none',
               }}
             />
@@ -286,7 +309,7 @@ export function TradingMarkets() {
             <div style={{
               height: '100%', borderRadius: 4,
               width: `${progress}%`,
-              background: 'linear-gradient(90deg, #60a5fa, #22d3ee)',
+              background: 'linear-gradient(90deg, #a78bfa, #22d3ee)',
               transition: 'width 1s linear',
             }} />
           </div>
@@ -296,9 +319,9 @@ export function TradingMarkets() {
       {/* ── Stats Row ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'Total Pairs',      value: `${display.length}`,  sub: 'Active markets',     color: '#93c5fd' },
+          { label: 'Total Pairs',      value: `${display.length}`,  sub: 'Active markets',     color: '#c4b5fd' },
           { label: 'Top Gainer',       value: topGainer ? topGainer.symbol.replace('USDT','') : '—',
-            sub: topGainer ? `+${topGainer.change.toFixed(2)}% today` : '',   color: '#60a5fa' },
+            sub: topGainer ? `+${topGainer.change.toFixed(2)}% today` : '',   color: '#a78bfa' },
           { label: 'Top Loser',        value: topLoser ? topLoser.symbol.replace('USDT','') : '—',
             sub: topLoser ? `${topLoser.change.toFixed(2)}% today` : '',      color: '#f87171' },
           { label: '24h Total Volume', value: fmtVolume(totalVol),  sub: 'Across all pairs',   color: '#38bdf8' },
@@ -326,7 +349,7 @@ export function TradingMarkets() {
           marginBottom: 16, fontSize: 12, color: 'hsl(240 5% 45%)',
         }}>
           {online
-            ? <Wifi size={12} style={{ color: '#60a5fa' }} />
+            ? <Wifi size={12} style={{ color: '#a78bfa' }} />
             : <WifiOff size={12} style={{ color: '#f87171' }} />}
           Prices last fetched from Binance at {lastRefresh.toLocaleTimeString()}
         </div>
@@ -347,8 +370,8 @@ export function TradingMarkets() {
               style={{
                 padding: '6px 16px', borderRadius: 7, fontSize: 12, fontWeight: 600,
                 cursor: 'pointer', border: 'none', transition: 'all 0.15s',
-                background: tab === t ? 'rgba(96,165,250,0.25)' : 'transparent',
-                color: tab === t ? '#93c5fd' : 'hsl(240 5% 50%)',
+                background: tab === t ? 'rgba(167,139,250,0.25)' : 'transparent',
+                color: tab === t ? '#c4b5fd' : 'hsl(240 5% 50%)',
               }}
             >
               {t === 'all' ? 'All Markets' : '⭐ Watchlist'}
@@ -403,9 +426,9 @@ export function TradingMarkets() {
                 className={flashClass}
                 onClick={() => setActivePair(isActive ? null : pair.symbol)}
                 style={{
-                  background: isActive ? 'rgba(96,165,250,0.12)' : 'rgba(255,255,255,0.028)',
+                  background: isActive ? 'rgba(167,139,250,0.12)' : 'rgba(255,255,255,0.028)',
                   border: isActive
-                    ? '1px solid rgba(96,165,250,0.45)'
+                    ? '1px solid rgba(167,139,250,0.45)'
                     : '1px solid rgba(255,255,255,0.07)',
                   borderRadius: 16, padding: '18px 18px 0',
                   cursor: 'pointer', transition: 'all 0.18s',
@@ -414,7 +437,7 @@ export function TradingMarkets() {
                 onMouseEnter={e => {
                   if (!isActive) {
                     const el = e.currentTarget as HTMLDivElement
-                    el.style.borderColor = 'rgba(96,165,250,0.3)'
+                    el.style.borderColor = 'rgba(167,139,250,0.3)'
                     el.style.background  = 'rgba(255,255,255,0.045)'
                   }
                 }}
@@ -489,7 +512,7 @@ export function TradingMarkets() {
                   <span style={{
                     display: 'flex', alignItems: 'center', gap: 4,
                     fontSize: 13, fontWeight: 700,
-                    color: up ? '#60a5fa' : '#f87171',
+                    color: up ? '#a78bfa' : '#f87171',
                   }}>
                     {up ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
                     {up ? '+' : ''}{pair.change.toFixed(2)}%
@@ -513,17 +536,17 @@ export function TradingMarkets() {
                       background: 'transparent', border: 'none', cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                       fontSize: 13, fontWeight: 600,
-                      color: isActive ? '#93c5fd' : 'hsl(240 5% 55%)',
+                      color: isActive ? '#c4b5fd' : 'hsl(240 5% 55%)',
                       transition: 'all 0.15s',
                     }}
                     onMouseEnter={e => {
                       const el = e.currentTarget as HTMLButtonElement
-                      el.style.color = '#93c5fd'
-                      el.style.background = 'rgba(96,165,250,0.08)'
+                      el.style.color = '#c4b5fd'
+                      el.style.background = 'rgba(167,139,250,0.08)'
                     }}
                     onMouseLeave={e => {
                       const el = e.currentTarget as HTMLButtonElement
-                      el.style.color = isActive ? '#93c5fd' : 'hsl(240 5% 55%)'
+                      el.style.color = isActive ? '#c4b5fd' : 'hsl(240 5% 55%)'
                       el.style.background = 'transparent'
                     }}
                   >

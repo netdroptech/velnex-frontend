@@ -70,6 +70,7 @@ import { AdminPropertyInvestments } from '@/pages/admin/AdminPropertyInvestments
 import { AdminAutoDeposit } from '@/pages/admin/AdminAutoDeposit'
 import { AdminTeam } from '@/pages/admin/AdminTeam'
 import { AdminInvestmentPlans } from '@/pages/admin/AdminInvestmentPlans'
+import { AdminTrades } from '@/pages/admin/AdminTrades'
 import { AdminNotifications } from '@/pages/admin/AdminNotifications'
 import { AdminSettings } from '@/pages/admin/AdminSettings'
 import { BannedPage } from '@/pages/BannedPage'
@@ -206,6 +207,7 @@ function App() {
         <Route path="properties"       element={<AdminProperties />} />
         <Route path="wallets"            element={<AdminWallets />} />
         <Route path="copy-traders"     element={<AdminCopyTraders />} />
+        <Route path="trades" element={<AdminTrades />} />
         <Route path="copy-history"          element={<AdminCopyHistory />} />
         <Route path="property-investments"  element={<AdminPropertyInvestments />} />
         <Route path="auto-deposit"          element={<AdminAutoDeposit />} />

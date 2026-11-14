@@ -37,11 +37,12 @@ const buildNav = (counts: { totalUsers: number; pendingKYC: number; suspended: n
   { section: 'FINANCE', items: [
     { label: 'Update Wallet',     path: '/admin/wallets',     icon: Wallet },
   ]},
-  { section: 'TRADING', items: [
-    { label: 'Copy Traders',       path: '/admin/copy-traders',       icon: Copy },
-    { label: 'Copy History',       path: '/admin/copy-history',       icon: History },
-    { label: 'Investment Plans',   path: '/admin/investment-plans',   icon: TrendingUp },
-  ]},
+{ section: 'TRADING', items: [
+  { label: 'Copy Traders',       path: '/admin/copy-traders',       icon: Copy },
+  { label: 'Copy History',       path: '/admin/copy-history',       icon: History },
+  { label: 'Trade History',      path: '/admin/trades',             icon: TrendingUp },
+  { label: 'Investment Plans',   path: '/admin/investment-plans',   icon: TrendingUp },
+]},
   { section: 'PLATFORM', items: [
     { label: 'Notifications',    path: '/admin/notifications', icon: Send        },
     { label: 'Leadership Team',  path: '/admin/team',          icon: UserSquare  },

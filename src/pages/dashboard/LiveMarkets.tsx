@@ -1,16 +1,19 @@
 import { useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { TrendingUp, TrendingDown, Search, Star } from 'lucide-react'
+import { CryptoLogo } from '@/components/ui/CryptoLogo'
+import { useFavorites } from '@/hooks/useFavorites'
 
 const MARKETS = [
   { name: 'Bitcoin',   symbol: 'BTC/USDT', price: 83552.00, change: +2.34, vol: '$28.4B', cap: '$1.64T',  data: [78000,79200,81000,80400,82100,83552], color: '#f59e0b', starred: true  },
   { name: 'Ethereum',  symbol: 'ETH/USDT', price: 3118.50,  change: +1.12, vol: '$12.1B', cap: '$374B',   data: [3050,3070,3090,3060,3100,3118],     color: '#60a5fa', starred: true  },
-  { name: 'Solana',    symbol: 'SOL/USDT', price: 185.22,   change: -0.88, vol: '$3.2B',  cap: '$85B',    data: [192,190,188,186,185,185],           color: '#60a5fa', starred: false },
+  { name: 'Solana',    symbol: 'SOL/USDT', price: 185.22,   change: -0.88, vol: '$3.2B',  cap: '$85B',    data: [192,190,188,186,185,185],           color: '#a78bfa', starred: false },
   { name: 'BNB',       symbol: 'BNB/USDT', price: 586.40,   change: +0.45, vol: '$1.8B',  cap: '$88B',    data: [578,580,582,580,584,586],           color: '#fbbf24', starred: false },
-  { name: 'XRP',       symbol: 'XRP/USDT', price: 0.618,    change: -1.22, vol: '$2.1B',  cap: '$67B',    data: [0.64,0.63,0.62,0.61,0.62,0.618],   color: '#60a5fa', starred: false },
-  { name: 'Cardano',   symbol: 'ADA/USDT', price: 0.412,    change: +3.10, vol: '$0.9B',  cap: '$14B',    data: [0.39,0.39,0.40,0.41,0.41,0.412],   color: '#60a5fa', starred: false },
+  { name: 'XRP',       symbol: 'XRP/USDT', price: 0.618,    change: -1.22, vol: '$2.1B',  cap: '$67B',    data: [0.64,0.63,0.62,0.61,0.62,0.618],   color: '#a78bfa', starred: false },
+  { name: 'Cardano',   symbol: 'ADA/USDT', price: 0.412,    change: +3.10, vol: '$0.9B',  cap: '$14B',    data: [0.39,0.39,0.40,0.41,0.41,0.412],   color: '#a78bfa', starred: false },
   { name: 'Dogecoin',  symbol: 'DOGE/USDT',price: 0.1742,   change: +5.22, vol: '$1.4B',  cap: '$25B',    data: [0.164,0.166,0.168,0.170,0.172,0.1742],color: '#fde68a',starred: false },
   { name: 'Avalanche', symbol: 'AVAX/USDT',price: 38.42,    change: -2.14, vol: '$0.6B',  cap: '$16B',    data: [40,39.5,39,38.8,38.5,38.42],       color: '#fb923c', starred: false },
-  { name: 'Polkadot',  symbol: 'DOT/USDT', price: 7.84,     change: +0.92, vol: '$0.4B',  cap: '$11B',    data: [7.6,7.65,7.7,7.72,7.8,7.84],      color: '#38bdf8', starred: false },
+  { name: 'Polkadot',  symbol: 'DOT/USDT', price: 7.84,     change: +0.92, vol: '$0.4B',  cap: '$11B',    data: [7.6,7.65,7.7,7.72,7.8,7.84],      color: '#e879f9', starred: false },
   { name: 'Chainlink', symbol: 'LINK/USDT',price: 14.22,    change: +1.88, vol: '$0.7B',  cap: '$9B',     data: [13.8,13.9,14.0,14.1,14.15,14.22], color: '#38bdf8', starred: false },
 ]
 
@@ -42,16 +45,24 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
 }
 
 function Card({ children, style = {} }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return <div style={{ background: 'hsl(222 60% 5%)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '0.875rem', ...style }}>{children}</div>
+  return <div style={{ background: 'hsl(260 60% 5%)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '0.875rem', ...style }}>{children}</div>
 }
 
 export function LiveMarkets() {
-  const [tab, setTab] = useState('All')
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const initialTab = TABS.includes(searchParams.get('tab') ?? '') ? (searchParams.get('tab') as string) : 'All'
+  const [tab, setTab] = useState(initialTab)
   const [search, setSearch] = useState('')
-  const [starred, setStarred] = useState<string[]>(['BTC/USDT', 'ETH/USDT'])
+  const { toggle, isFavorite } = useFavorites()
+
+  function handleTrade(symbol: string) {
+    // Convert "BTC/USDT" → "BTCUSDT" for the TradeDetail route.
+    navigate(`/dashboard/trade/${symbol.replace('/', '')}`)
+  }
 
   const filtered = MARKETS.filter(m => {
-    if (tab === 'Favourites' && !starred.includes(m.symbol)) return false
+    if (tab === 'Favourites' && !isFavorite(m.symbol)) return false
     if (tab === 'Top Gainers' && m.change <= 0) return false
     if (tab === 'Top Losers'  && m.change >= 0) return false
     if (search && !m.name.toLowerCase().includes(search.toLowerCase()) && !m.symbol.toLowerCase().includes(search.toLowerCase())) return false
@@ -64,7 +75,7 @@ export function LiveMarkets() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h1 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'hsl(40 6% 95%)' }}>Live Markets</h1>
-            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: 'rgba(96,165,250,0.15)', color: '#60a5fa', letterSpacing: '0.05em' }}>● LIVE</span>
+            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: 'rgba(167,139,250,0.15)', color: '#a78bfa', letterSpacing: '0.05em' }}>● LIVE</span>
           </div>
           <p style={{ fontSize: 13, color: 'hsl(240 5% 55%)' }}>Real-time cryptocurrency prices and market data</p>
         </div>
@@ -76,7 +87,7 @@ export function LiveMarkets() {
           <Card key={o.label} style={{ padding: '1rem 1.25rem' }}>
             <p style={{ fontSize: 11, color: 'hsl(240 5% 50%)', marginBottom: 5 }}>{o.label}</p>
             <p style={{ fontSize: '1.1rem', fontWeight: 700, color: 'hsl(40 6% 95%)', letterSpacing: '-0.01em', marginBottom: 3 }}>{o.value}</p>
-            <span style={{ fontSize: 11, fontWeight: 600, color: o.up ? '#60a5fa' : '#f87171' }}>{o.change}</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: o.up ? '#a78bfa' : '#f87171' }}>{o.change}</span>
           </Card>
         ))}
       </div>
@@ -86,7 +97,7 @@ export function LiveMarkets() {
         <div className="flex flex-wrap items-center gap-3 px-5 py-3.5 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
           <div className="flex gap-1">
             {TABS.map(t => (
-              <button key={t} onClick={() => setTab(t)} style={{ padding: '0.3rem 0.75rem', borderRadius: 999, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: 'none', background: tab === t ? 'rgba(96,165,250,0.2)' : 'transparent', color: tab === t ? '#93c5fd' : 'hsl(240 5% 55%)', transition: 'all 0.15s' }}>
+              <button key={t} onClick={() => setTab(t)} style={{ padding: '0.3rem 0.75rem', borderRadius: 999, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: 'none', background: tab === t ? 'rgba(167,139,250,0.2)' : 'transparent', color: tab === t ? '#c4b5fd' : 'hsl(240 5% 55%)', transition: 'all 0.15s' }}>
                 {t}
               </button>
             ))}
@@ -109,20 +120,19 @@ export function LiveMarkets() {
             <tbody>
               {filtered.map((m, i) => (
                 <tr key={m.symbol} style={{ borderBottom: i < filtered.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', cursor: 'pointer' }}
+                  onClick={() => handleTrade(m.symbol)}
                   onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.025)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <td style={{ padding: '0.75rem 0.5rem 0.75rem 1rem', width: 32 }}>
-                    <button onClick={() => setStarred(s => s.includes(m.symbol) ? s.filter(x => x !== m.symbol) : [...s, m.symbol])} style={{ background: 'none', border: 'none', cursor: 'pointer', color: starred.includes(m.symbol) ? '#f59e0b' : 'hsl(240 5% 40%)', padding: 0 }}>
-                      <Star size={13} fill={starred.includes(m.symbol) ? '#f59e0b' : 'none'} />
+                    <button onClick={(e) => { e.stopPropagation(); toggle(m.symbol) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: isFavorite(m.symbol) ? '#f59e0b' : 'hsl(240 5% 40%)', padding: 0 }}>
+                      <Star size={13} fill={isFavorite(m.symbol) ? '#f59e0b' : 'none'} />
                     </button>
                   </td>
                   <td style={{ padding: '0.75rem 0.5rem', color: 'hsl(240 5% 45%)', fontSize: 12 }}>{i + 1}</td>
                   <td style={{ padding: '0.75rem 1rem' }}>
                     <div className="flex items-center gap-2.5">
-                      <div style={{ width: 30, height: 30, borderRadius: '50%', background: `${m.color}22`, border: `1px solid ${m.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: m.color, flexShrink: 0 }}>
-                        {m.symbol.slice(0, 3)}
-                      </div>
+                      <CryptoLogo symbol={m.symbol} size={30} fallbackColor={m.color} />
                       <div>
                         <p style={{ fontWeight: 600, color: 'hsl(40 6% 92%)', fontSize: 13 }}>{m.name}</p>
                         <p style={{ fontSize: 11, color: 'hsl(240 5% 50%)' }}>{m.symbol}</p>
@@ -133,7 +143,7 @@ export function LiveMarkets() {
                     ${m.price >= 1 ? m.price.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : m.price.toFixed(4)}
                   </td>
                   <td style={{ padding: '0.75rem 1rem' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: m.change >= 0 ? '#60a5fa' : '#f87171', fontWeight: 600 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: m.change >= 0 ? '#a78bfa' : '#f87171', fontWeight: 600 }}>
                       {m.change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                       {m.change >= 0 ? '+' : ''}{m.change.toFixed(2)}%
                     </span>
@@ -141,10 +151,13 @@ export function LiveMarkets() {
                   <td style={{ padding: '0.75rem 1rem', color: 'hsl(240 5% 65%)' }}>{m.vol}</td>
                   <td style={{ padding: '0.75rem 1rem', color: 'hsl(240 5% 65%)' }}>{m.cap}</td>
                   <td style={{ padding: '0.75rem 1rem' }}>
-                    <Sparkline data={m.data} color={m.change >= 0 ? '#60a5fa' : '#f87171'} />
+                    <Sparkline data={m.data} color={m.change >= 0 ? '#a78bfa' : '#f87171'} />
                   </td>
                   <td style={{ padding: '0.75rem 1rem' }}>
-                    <button style={{ padding: '0.3rem 0.75rem', borderRadius: '0.5rem', background: 'linear-gradient(135deg, #60a5fa 0%, #22d3ee 100%)', color: '#050505', fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleTrade(m.symbol) }}
+                      style={{ padding: '0.3rem 0.75rem', borderRadius: '0.5rem', background: 'linear-gradient(135deg, #a78bfa 0%, #22d3ee 100%)', color: '#050505', fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    >
                       Trade
                     </button>
                   </td>
